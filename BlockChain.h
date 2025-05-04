@@ -10,9 +10,22 @@ using std::string;
 using std::ifstream;
 using std::ofstream;
 
+const int DATA_SIZE = 4;
+const char SPACE = ' ';
+const int SENDER_INDEX = 0;
+const int RECIVER_INDEX = 1;
+const int VALUE_INDEX = 2;
+const int TIMESTEMP_INDEX = 3;
 
 typedef unsigned int (*updateFunction)(unsigned int);
 
+// ---------------------------------structs------------------------------------ //
+struct Block {
+    Transaction transaction;
+    string timestamp;
+    Block* next_block;
+    Block* prev_block;
+};
 
 /**
 *
@@ -20,7 +33,9 @@ typedef unsigned int (*updateFunction)(unsigned int);
  *
 */
 struct BlockChain {
-    // You may add any fields you believe are necessary
+    Block* newest_tran;
+    Block* oldest_tran;
+    int size;
 };
 
 
@@ -157,3 +172,8 @@ void BlockChainCompress(BlockChain& blockChain);
  * @param function a pointer to a transform function
 */
 void BlockChainTransform(BlockChain& blockChain, updateFunction function);
+
+// -----------------------------helper functions------------------------------- //
+string* get_data(const string& line);
+void blockChain_init(BlockChain &blockChain);
+void delete_junk_block(BlockChain &blockChain);
