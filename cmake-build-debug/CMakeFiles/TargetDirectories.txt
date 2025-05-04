@@ -1,0 +1,3 @@
+C:/github/HW1_MATAM_SPRING25/cmake-build-debug/CMakeFiles/HW1_MATAM_SPRING25.dir
+C:/github/HW1_MATAM_SPRING25/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/github/HW1_MATAM_SPRING25/cmake-build-debug/CMakeFiles/rebuild_cache.dir
