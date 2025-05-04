@@ -175,5 +175,7 @@ void BlockChainTransform(BlockChain& blockChain, updateFunction function);
 
 // -----------------------------helper functions------------------------------- //
 string* get_data(const string& line);
-void blockChain_init(BlockChain &blockChain);
-void delete_junk_block(BlockChain &blockChain);
+void delete_oldest_tran(BlockChain &blockChain, Block *block_to_delete);
+void delete_newest_tran(BlockChain &blockChain, Block *block_to_delete);
+bool check_if_same(Block* current, Block* final);
+void delete_block(BlockChain& blockChain, Block* block_to_delete);

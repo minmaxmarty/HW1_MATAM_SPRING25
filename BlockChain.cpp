@@ -1,4 +1,55 @@
 #include "BlockChain.h"
+#include "Transaction.h"
+
+
+//-------------------------helper functions----------------------------//
+string* get_data(const string &line) {
+    string* data = new string[DATA_SIZE];
+    int start_index = 0;
+    int cur_data = 0;
+    for (int i = 0; i < line.size(); ++i) {
+        if (line[i] == SPACE) {
+            data[cur_data] = line.substr(start_index, i - start_index);
+            cur_data++;
+            start_index = i + 1;
+        }
+    }
+    return data;
+}
+
+void delete_oldest_tran(BlockChain &blockChain, Block *block_to_delete) {
+    blockChain.oldest_tran = blockChain.oldest_tran->next_block;
+    blockChain.oldest_tran->prev_block = nullptr;
+    block_to_delete->next_block = nullptr;
+    delete block_to_delete;
+}
+
+void delete_newest_tran(BlockChain &blockChain, Block *block_to_delete) {
+    blockChain.newest_tran = blockChain.newest_tran->prev_block;
+    blockChain.newest_tran->next_block = nullptr;
+    block_to_delete->prev_block = nullptr;
+    delete block_to_delete;
+}
+
+bool check_if_same(Block *current, Block *final) {
+    return current->transaction.sender == final->transaction.sender && current->transaction.receiver == final->transaction.receiver;
+}
+
+void delete_block(BlockChain& blockChain, Block* block_to_delete) {
+    if (block_to_delete == blockChain.newest_tran) {
+        delete_newest_tran(blockChain, block_to_delete);
+    } else if (block_to_delete == blockChain.oldest_tran) {
+        delete_oldest_tran(blockChain, block_to_delete);
+    } else {
+        block_to_delete->prev_block->next_block = block_to_delete->next_block;
+        block_to_delete->prev_block = nullptr;
+        block_to_delete->next_block->prev_block = block_to_delete->prev_block;
+        block_to_delete->next_block = nullptr;
+        delete block_to_delete;
+    }
+}
+
+//---------------------------- BlockChain -----------------------------//
 
 int BlockChainGetSize(const BlockChain &blockChain) {
     return blockChain.size;
@@ -34,61 +85,74 @@ void BlockChainAppendTransaction(BlockChain &blockChain, const Transaction &tran
     blockChain.size++;
 }
 
-
-string* get_data(const string &line) {
-    string* data = new (string[DATA_SIZE]);
-    int start_index = 0;
-    int cur_data = 0;
-    for (int i = 0; i < line.size(); ++i) {
-        if (line[i] == SPACE) {
-            data[cur_data] = line.substr(start_index, i - start_index);
-            cur_data++;
-            start_index = i + 1;
-        }
-    }
-    return data;
-}
-
-void blockChain_init(BlockChain &blockChain) {
-    blockChain.newest_tran->next_block = nullptr;
-    blockChain.newest_tran->prev_block = nullptr;
-    blockChain.oldest_tran = blockChain.newest_tran;
-}
-
-void delete_junk_block(BlockChain &blockChain) {
-    blockChain.oldest_tran = blockChain.oldest_tran->next_block;
-    blockChain.oldest_tran->prev_block->next_block = nullptr;
-    delete blockChain.oldest_tran->prev_block;
-    blockChain.oldest_tran->prev_block = nullptr;
-}
-
 BlockChain BlockChainLoad(ifstream &file) {
     string cur_line;
-    Block* temp_block;
+    Transaction temp_transaction{};
+    Block* temp_block = new Block{temp_transaction, "", nullptr, nullptr};
     BlockChain new_blockChain{temp_block, temp_block, 0};
-    blockChain_init(new_blockChain);
-    const string* data = nullptr;
     while (getline(file, cur_line)) {
-        data = get_data(cur_line);
+        const string* data = get_data(cur_line);
         BlockChainAppendTransaction(new_blockChain, stoi(data[VALUE_INDEX]),
             data[SENDER_INDEX], data[RECIVER_INDEX], data[TIMESTEMP_INDEX]);
+        delete[] data;
     }
-    delete[] data;
-    delete_junk_block(new_blockChain);
+    delete_oldest_tran(new_blockChain, temp_block);
     return new_blockChain;
 }
 
 void BlockChainDump(const BlockChain &blockChain, ofstream &file) {
+    file << "BlockChain Info:" << std::endl;
+    const Block* current = blockChain.newest_tran;
+    for (int i = 0; i < blockChain.size; i++) {
+        file << i + 1 << "." << std::endl;
+        TransactionDumpInfo(current->transaction, file);
+        file << "Timestamp: " << current->timestamp << std::endl;
+        current = current->prev_block;
+    }
 }
 
 void BlockChainDumpHashed(const BlockChain &blockChain, ofstream &file) {
+    const Block* current = blockChain.newest_tran;
+    for (int i = 0; i < blockChain.size; i++) {
+        file << TransactionHashedMessage(current->transaction);
+        if (i != blockChain.size - 1)
+            file << std::endl;
+        current = current->prev_block;
+    }
 }
 
 bool BlockChainVerifyFile(const BlockChain &blockChain, std::ifstream &file) {
+    const Block* current = blockChain.newest_tran;
+    string cur_line;
+    while (getline(file, cur_line) && current != nullptr) {
+        if (!TransactionVerifyHashedMessage(current->transaction, cur_line))
+            return false;
+        current = current->prev_block;
+    }
+    return true;
 }
 
 void BlockChainCompress(BlockChain &blockChain) {
+    Block* current = blockChain.newest_tran;
+    Block* final_same_block = current->prev_block;
+    for (int i = 0; i < blockChain.size; i++) {
+        if (check_if_same(current, final_same_block)) {
+            for (; check_if_same(current, final_same_block) && final_same_block != blockChain.oldest_tran;
+                final_same_block = final_same_block->prev_block);
+            while (final_same_block->next_block != current) {
+                current->transaction.value += final_same_block->next_block->transaction.value;
+                delete_block(blockChain, final_same_block->next_block);
+            }
+            current->transaction.value += final_same_block->transaction.value;
+            delete_block(blockChain, final_same_block);
+        }
+    }
 }
 
 void BlockChainTransform(BlockChain &blockChain, updateFunction function) {
+    Block* current = blockChain.newest_tran;
+    for (int i = 0; i < blockChain.size; i++) {
+        current->transaction.value = function(current->transaction.value);
+        current = current->prev_block;
+    }
 }

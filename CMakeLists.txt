@@ -6,9 +6,9 @@ set(CMAKE_CXX_STANDARD 14)
 include_directories(.)
 
 add_executable(HW1_MATAM_SPRING25
+        BlockChain.cpp
         BlockChain.h
+        Transaction.cpp
         Transaction.h
         Utilities.cpp
-        Utilities.h
-        Transaction.cpp
-        BlockChain.cpp)
+        Utilities.h)
