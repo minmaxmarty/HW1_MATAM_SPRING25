@@ -33,8 +33,8 @@ struct Block {
  *
 */
 struct BlockChain {
-    Block* newest_tran;
-    Block* oldest_tran;
+    Block* newest_transaction;
+    Block* oldest_transaction;
     int size;
 };
 
@@ -180,3 +180,4 @@ void delete_newest_tran(BlockChain &blockChain, Block *block_to_delete);
 void delete_middle_tran(Block *block_to_delete);
 bool check_if_same(const Block* current,const Block* final);
 void delete_block(BlockChain& blockChain, Block* block_to_delete);
+void delete_blockChain(BlockChain& blockChain);

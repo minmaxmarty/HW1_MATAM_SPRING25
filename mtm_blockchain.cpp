@@ -1,7 +1,6 @@
 #include "Transaction.h"
 #include "BlockChain.h"
 #include "Utilities.h"
-#include <fstream>
 #include <iostream>
 #include <cstring>
 
@@ -10,10 +9,17 @@ const int OP = 1;
 const int SOURCE = 2;
 const int TARGET = 3;
 
+bool is_valid_operation(const char* op) {
+    return strcmp(op, "verify") == 0 ||
+           strcmp(op, "format") == 0 ||
+           strcmp(op, "hash") == 0   ||
+           strcmp(op, "compress") == 0;
+}
+
 int main(int argc, char** argv) {
 
-    if (argc != MIN_ARG) {
-        getErrorMessage();
+    if (argc != MIN_ARG || !is_valid_operation(argv[OP])) {
+        std::cout << getErrorMessage() << std::endl;
         return 1;
     }
 
@@ -43,6 +49,8 @@ int main(int argc, char** argv) {
             BlockChainDump(blockChain, target_file);
         }
     }
+
+    delete_blockChain(blockChain);
 
     return 0;
 }
