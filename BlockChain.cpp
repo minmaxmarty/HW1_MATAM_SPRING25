@@ -2,11 +2,14 @@
 #include "Transaction.h"
 
 //-------------------------helper functions----------------------------//
+
+// convert file string data into usable data for building a blockChain
 string* getData(string* data, const string &line) {
     int startIndex = 0;
     int currentIndex = 0;
     for (int i = 0; i <= (int)line.size(); ++i) {
         if (line[i] == SPACE || i == (int)line.size()) {
+            // if we find a space, or we are at the end of the string, we take the word before it and add it to the data array
             data[currentIndex] = line.substr(startIndex, i - startIndex);
             currentIndex++;
             startIndex = i + 1;
@@ -16,7 +19,9 @@ string* getData(string* data, const string &line) {
 }
 
 bool checkSameSenderReceiver(const Block *current, const Block *final) {
-    return current->m_transaction.sender == final->m_transaction.sender && current->m_transaction.receiver == final->m_transaction.receiver;
+    // return true if the sender and receiver are the same
+    return current->m_transaction.sender == final->m_transaction.sender &&
+        current->m_transaction.receiver == final->m_transaction.receiver;
 }
 
 bool compressCheckHelper(const Block* current) {
@@ -24,50 +29,56 @@ bool compressCheckHelper(const Block* current) {
 }
 
 void deleteBlock(BlockChain& blockChain, Block* blockToDelete) {
+    //cache the blocks before and after the victim block
     Block* previousPtr = blockToDelete->m_prevBlock;
     Block* nextPtr = blockToDelete->m_nextBlock;
-
+    if (blockChain.m_newestTransaction == blockChain.m_oldestTransaction) {
+        delete blockToDelete;
+        blockChain.m_size = 0;
+        return;
+    }
     if (previousPtr) {
         previousPtr->m_nextBlock = nextPtr;
     }
     else {
         blockChain.m_oldestTransaction = nextPtr;
-        blockToDelete->m_nextBlock = nullptr;
     }
     if (nextPtr) {
         nextPtr->m_prevBlock = previousPtr;
     }
     else {
         blockChain.m_newestTransaction = previousPtr;
-        blockToDelete->m_prevBlock = nullptr;
     }
     delete blockToDelete;
     blockChain.m_size--;
 }
 
 void deleteBlockChain(BlockChain& blockChain) {
-    const Block* current = blockChain.m_newestTransaction;
-    while (current) {
-        const Block* previous = current->m_prevBlock;
-        delete current;
-        current = previous;
-    }
-    blockChain.m_size = 0;
+    deleteMultipleBlocks(blockChain, blockChain.m_newestTransaction, blockChain.m_oldestTransaction);
 }
 
-bool compressHelper(BlockChain& blockChain, Block* finalSameBlock, Block* current) {
-    Block* toDelete;
-    bool toBreak = false;
-    if (finalSameBlock->m_nextBlock != current) {
-        toDelete = finalSameBlock->m_nextBlock;
+void deleteMultipleBlocks(BlockChain& blockChain, Block* startBlock, Block* endBlock) {
+    Block* toDelete = startBlock;
+    Block* stopBlockPtr = endBlock->m_prevBlock;
+    while (toDelete != stopBlockPtr) {
+        Block* previous = toDelete->m_prevBlock;
+        deleteBlock(blockChain, toDelete);
+        toDelete = previous;
     }
-    else {
-        toDelete = finalSameBlock;
-        toBreak = true;
+}
+
+Block* findFinalSameBlock(Block* current, Block* start, Block* oldest, bool &finalIsOldest) {
+    Block* ptr = start;
+    while (checkSameSenderReceiver(current, ptr)) {
+        current->m_transaction.value += ptr->m_transaction.value;
+        if (ptr != oldest) {
+            ptr = ptr->m_prevBlock;
+        } else {
+            finalIsOldest = true;
+            break;
+        }
     }
-    current->m_transaction.value += toDelete->m_transaction.value;
-    deleteBlock(blockChain, toDelete);
-    return toBreak;
+    return ptr;
 }
 
 //---------------------------- BlockChain -----------------------------//
@@ -177,17 +188,15 @@ bool BlockChainVerifyFile(const BlockChain &blockChain, std::ifstream &file) {
 void BlockChainCompress(BlockChain &blockChain) {
     Block* newest = blockChain.m_newestTransaction;
     Block* oldest = blockChain.m_oldestTransaction;
+    bool finalIsOldest = false;
     for (Block* current = newest; compressCheckHelper(current); current = current->m_prevBlock) {
         Block* finalSameBlock = current->m_prevBlock;
         if (checkSameSenderReceiver(current, finalSameBlock)) {
-            for (; finalSameBlock != oldest && checkSameSenderReceiver(current, finalSameBlock->m_prevBlock);
-                finalSameBlock = finalSameBlock->m_prevBlock) {}
-            while (true) {
-                const bool toBreak = compressHelper(blockChain, finalSameBlock, current);
-                if (toBreak) {
-                    break;
-                }
+            finalSameBlock = findFinalSameBlock(current, finalSameBlock, oldest, finalIsOldest);
+            if (!finalIsOldest) {
+                finalSameBlock = finalSameBlock->m_nextBlock;
             }
+            deleteMultipleBlocks(blockChain, current->m_prevBlock, finalSameBlock);
         }
     }
 }

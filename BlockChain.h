@@ -179,6 +179,7 @@ void BlockChainTransform(BlockChain& blockChain, updateFunction function);
 string* getData(string* data, const string &line);
 bool checkSameSenderReceiver(const Block* current,const Block* final);
 bool compressCheckHelper(const Block* current);
+Block* findFinalSameBlock(Block* current, Block* start, Block* oldest, bool &finalIsOldest);
 void deleteBlock(BlockChain& blockChain, Block* blockToDelete);
 void deleteBlockChain(BlockChain& blockChain);
-bool compressHelper(BlockChain& blockChain, Block* finalSameBlock, Block* current);
+void deleteMultipleBlocks(BlockChain& blockChain, Block* startBlock, Block* endBlock);
