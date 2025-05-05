@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    delete_blockChain(blockChain);
+    deleteBlockChain(blockChain);
 
     return 0;
 }

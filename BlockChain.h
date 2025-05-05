@@ -11,20 +11,22 @@ using std::ifstream;
 using std::ofstream;
 
 const int DATA_SIZE = 4;
-const char SPACE = ' ';
 const int SENDER_INDEX = 0;
 const int RECIVER_INDEX = 1;
 const int VALUE_INDEX = 2;
 const int TIMESTEMP_INDEX = 3;
 
+const char SPACE = ' ';
+const string EMPTY = "";
+
 typedef unsigned int (*updateFunction)(unsigned int);
 
 // ---------------------------------structs------------------------------------ //
 struct Block {
-    Transaction transaction;
-    string timestamp;
-    Block* next_block;
-    Block* prev_block;
+    Transaction m_transaction;
+    string m_timestamp;
+    Block* m_nextBlock;
+    Block* m_prevBlock;
 };
 
 /**
@@ -33,9 +35,9 @@ struct Block {
  *
 */
 struct BlockChain {
-    Block* newest_transaction;
-    Block* oldest_transaction;
-    int size;
+    Block* m_newestTransaction;
+    Block* m_oldestTransaction;
+    int m_size;
 };
 
 
@@ -174,10 +176,9 @@ void BlockChainCompress(BlockChain& blockChain);
 void BlockChainTransform(BlockChain& blockChain, updateFunction function);
 
 // -----------------------------helper functions------------------------------- //
-string* get_data(string* data, const string &line);
-void delete_oldest_tran(BlockChain &blockChain, Block *block_to_delete);
-void delete_newest_tran(BlockChain &blockChain, Block *block_to_delete);
-void delete_middle_tran(Block *block_to_delete);
-bool check_if_same(const Block* current,const Block* final);
-void delete_block(BlockChain& blockChain, Block* block_to_delete);
-void delete_blockChain(BlockChain& blockChain);
+string* getData(string* data, const string &line);
+bool checkSameSenderReceiver(const Block* current,const Block* final);
+bool compressCheckHelper(const Block* current);
+void deleteBlock(BlockChain& blockChain, Block* blockToDelete);
+void deleteBlockChain(BlockChain& blockChain);
+bool compressHelper(BlockChain& blockChain, Block* finalSameBlock, Block* current);
