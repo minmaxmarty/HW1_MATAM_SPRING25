@@ -6,8 +6,8 @@
 string* get_data(string* data, const string &line) {
     int start_index = 0;
     int cur_data = 0;
-    for (int i = 0; i < line.size(); ++i) {
-        if (line[i] == SPACE) {
+    for (int i = 0; i <= (int)line.size(); ++i) {
+        if (line[i] == SPACE || i == (int)line.size()) {
             data[cur_data] = line.substr(start_index, i - start_index);
             cur_data++;
             start_index = i + 1;
@@ -32,8 +32,8 @@ void delete_newest_tran(BlockChain &blockChain, Block *block_to_delete) {
 
 void delete_middle_tran(Block *block_to_delete) {
     block_to_delete->prev_block->next_block = block_to_delete->next_block;
-    block_to_delete->prev_block = nullptr;
     block_to_delete->next_block->prev_block = block_to_delete->prev_block;
+    block_to_delete->prev_block = nullptr;
     block_to_delete->next_block = nullptr;
     delete block_to_delete;
 }
@@ -78,9 +78,9 @@ void BlockChainAppendTransaction(BlockChain &blockChain, unsigned int value, con
 }
 
 void BlockChainAppendTransaction(BlockChain &blockChain, const Transaction &transaction, const string &timestamp) {
-    Block* new_tran = new Block{transaction, timestamp, nullptr, blockChain.newest_tran};
-    blockChain.newest_tran->next_block = new_tran;
-    blockChain.newest_tran = new_tran;
+    Block* new_tran = new Block{transaction, timestamp, blockChain.oldest_tran, nullptr};
+    blockChain.oldest_tran->prev_block = new_tran;
+    blockChain.oldest_tran = new_tran;
     blockChain.size++;
 }
 
@@ -95,7 +95,7 @@ BlockChain BlockChainLoad(ifstream &file) {
         BlockChainAppendTransaction(new_blockChain, stoi(data[VALUE_INDEX]), data[SENDER_INDEX], data[RECIVER_INDEX],
                                     data[TIMESTEMP_INDEX]);
     }
-    delete_oldest_tran(new_blockChain, temp_block);
+    delete_newest_tran(new_blockChain, temp_block);
     return new_blockChain;
 }
 
@@ -105,7 +105,7 @@ void BlockChainDump(const BlockChain &blockChain, ofstream &file) {
     for (int i = 0; i < blockChain.size; i++) {
         file << i + 1 << "." << std::endl;
         TransactionDumpInfo(current->transaction, file);
-        file << "Timestamp: " << current->timestamp << std::endl;
+        file << "Transaction timestamp: " << current->timestamp << std::endl;
         current = current->prev_block;
     }
 }
@@ -136,11 +136,15 @@ bool BlockChainVerifyFile(const BlockChain &blockChain, std::ifstream &file) {
 
 void BlockChainCompress(BlockChain &blockChain) {
     Block* current = blockChain.newest_tran;
-    Block* final_same_block = current->prev_block;
-    for (int i = 0; i < blockChain.size; i++) {
+    for (; current != nullptr; current = current->prev_block) {
+        Block* final_same_block = current->prev_block;
         if (check_if_same(current, final_same_block)) {
+            int decrease_size_by = 1;
             for (; check_if_same(current, final_same_block) && final_same_block != blockChain.oldest_tran;
-                final_same_block = final_same_block->prev_block);
+                final_same_block = final_same_block->prev_block) {
+                decrease_size_by++;
+            }
+            blockChain.size -= decrease_size_by;
             while (final_same_block->next_block != current) {
                 current->transaction.value += final_same_block->next_block->transaction.value;
                 delete_block(blockChain, final_same_block->next_block);

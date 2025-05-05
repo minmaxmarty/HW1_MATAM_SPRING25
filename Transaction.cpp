@@ -2,7 +2,7 @@
 #include "Utilities.h"
 
 void TransactionDumpInfo(const Transaction& transaction, ofstream& file) {
-    const string to_print[] = {"Sender Name: ", "Receiver Name:", "Transaction Value: "};
+    const string to_print[] = {"Sender Name: ", "Receiver Name: ", "Transaction Value: "};
     file << to_print[0] << transaction.sender << std::endl;
     file << to_print[1] << transaction.receiver << std::endl;
     file << to_print[2] << transaction.value << std::endl;
