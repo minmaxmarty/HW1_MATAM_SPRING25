@@ -1,2 +1,6 @@
 .idea/
 cmake-build-debug/
+.gitmodules
+MatamGenericTester/
+TechnionMatam/
+test_results.html

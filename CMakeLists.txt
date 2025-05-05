@@ -12,4 +12,4 @@ add_executable(HW1_MATAM_SPRING25
         Transaction.h
         Utilities.cpp
         Utilities.h
-        mtm_blockchain.cpp)
+        main.cpp)
