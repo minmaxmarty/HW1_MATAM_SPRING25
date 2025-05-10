@@ -2,23 +2,34 @@
 #include "BlockChain.h"
 #include "Utilities.h"
 #include <iostream>
-#include <cstring>
 
 const int MIN_ARG = 4;
 const int OP = 1;
 const int SOURCE = 2;
 const int TARGET = 3;
-
-bool is_valid_operation(const char* op) {
-    return strcmp(op, "verify") == 0 ||
-           strcmp(op, "format") == 0 ||
-           strcmp(op, "hash") == 0   ||
-           strcmp(op, "compress") == 0;
-}
+const int NUM_OF_OP = 4;
+const int VERIFY = 0;
+const int FORMAT = 1;
+const int HASH = 2;
+const int COMPRESS = 3;
 
 int main(int argc, char** argv) {
 
-    if (argc != MIN_ARG || !is_valid_operation(argv[OP])) {
+    if (argc != MIN_ARG) {
+        std::cout << getErrorMessage() << std::endl;
+        return 1;
+    }
+
+    string arguments[] = {"verify", "format", "hash", "compress"};
+    string currentOperation = argv[OP];
+    bool is_valid_operation = false;
+    for (int i = 0; i < NUM_OF_OP; i++) {
+        if (currentOperation == arguments[i]) {
+            is_valid_operation = true;
+        }
+    }
+
+    if (!is_valid_operation) {
         std::cout << getErrorMessage() << std::endl;
         return 1;
     }
@@ -27,7 +38,7 @@ int main(int argc, char** argv) {
 
     BlockChain blockChain = BlockChainLoad(source_file);
 
-    if (strcmp(argv[OP], "verify") == 0) {
+    if (currentOperation == arguments[VERIFY]) {
         std::ifstream read_target_file(argv[TARGET]);
         bool verification_outcome = BlockChainVerifyFile(blockChain, read_target_file);
         verification_outcome
@@ -36,15 +47,15 @@ int main(int argc, char** argv) {
 
     } else {
         std::ofstream target_file(argv[TARGET]);
-        if (strcmp(argv[OP], "format") == 0) {
+        if (currentOperation == arguments[FORMAT]) {
             BlockChainDump(blockChain, target_file);
         }
 
-        else if (strcmp(argv[OP], "hash") == 0) {
+        else if (currentOperation == arguments[HASH]) {
             BlockChainDumpHashed(blockChain, target_file);
         }
 
-        else if (strcmp(argv[OP], "compress") == 0) {
+        else if (currentOperation == arguments[COMPRESS]) {
             BlockChainCompress(blockChain);
             BlockChainDump(blockChain, target_file);
         }
