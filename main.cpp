@@ -27,12 +27,13 @@ int main(int argc, char** argv) {
         if (currentOperation == arguments[i]) {
             is_valid_operation = true;
         }
+        if (!is_valid_operation && i == NUM_OF_OP -1 ) {
+            std::cout << getErrorMessage() << std::endl;
+            return 1;
+        }
     }
 
-    if (!is_valid_operation) {
-        std::cout << getErrorMessage() << std::endl;
-        return 1;
-    }
+
 
     std::ifstream source_file(argv[SOURCE]);
 
